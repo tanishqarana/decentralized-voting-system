@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Decentralized Voting</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.1/dist/ethers.min.js"></script>
+</head>
+<body>
+  <h1>Voting System</h1>
+  <button onclick="connect()">Connect Wallet</button>
+  <button onclick="vote()">Vote Candidate 0</button>
+
+  <script>
+    let contract;
+
+    const contractAddress = "PASTE_DEPLOYED_ADDRESS_HERE";
+    const abi = [
+      "function vote(uint256)",
+      "function startVoting()"
+    ];
+
+    async function connect() {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      contract = new ethers.Contract(contractAddress, abi, signer);
+      alert("Wallet connected");
+    }
+
+    async function vote() {
+      const tx = await contract.vote(0);
+      await tx.wait();
+      alert("Vote cast!");
+    }
+  </script>
+</body>
+</html>
