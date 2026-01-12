@@ -1,13 +1,28 @@
-# Sample Hardhat Project
+# 🗳️ Decentralized Voting System
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
+This project is a simple decentralized voting application built using
+Solidity, Hardhat, React, and Ethers.js.
 
-Try running some of the following tasks:
+## Features
+- Users can connect their MetaMask wallet
+- Admin (contract owner) can add candidates
+- Users can vote only once
+- Votes are stored on the blockchain
+- Transparent and tamper-proof voting
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.js
-```
+## Tech Stack
+- Solidity (Smart Contracts)
+- Hardhat (Development & Testing)
+- React + Vite (Frontend)
+- Ethers.js (Blockchain interaction)
+- MetaMask
+
+## How it works
+1. Smart contract is deployed using Hardhat
+2. Frontend connects to contract using Ethers.js
+3. Users interact via MetaMask
+4. All votes are stored on-chain
+
+## Note
+This project currently works on a local Hardhat network for demonstration
+and academic purposes.
