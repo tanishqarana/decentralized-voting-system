@@ -2,43 +2,66 @@
 pragma solidity ^0.8.19;
 
 contract Voting {
-    struct Candidate {
-        string name;
-        uint256 voteCount;
-    }
 
-    address public admin;
-    bool public votingActive;
-
-    mapping(address => bool) public hasVoted;
-    Candidate[] public candidates;
+    // Address of the contract owner (deployer)
+    address public owner;
 
     constructor() {
-        admin = msg.sender;
+        owner = msg.sender;
     }
 
-    modifier onlyAdmin() {
-        require(msg.sender == admin, "Only admin allowed");
+    // Candidate structure
+    struct Candidate {
+        uint id;
+        string name;
+        uint voteCount;
+    }
+
+    // Total number of candidates
+    uint public candidatesCount;
+
+    // Mapping: candidate id => Candidate
+    mapping(uint => Candidate) public candidates;
+
+    // Mapping: voter address => voted or not
+    mapping(address => bool) public hasVoted;
+
+    // Events (for transparency)
+    event CandidateAdded(uint id, string name);
+    event VoteCasted(address voter, uint candidateId);
+
+    // Modifier: only owner can add candidates
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not authorized");
         _;
     }
 
-    function addCandidate(string memory _name) public onlyAdmin {
-        candidates.push(Candidate(_name, 0));
+    // Add a new candidate (only owner)
+    function addCandidate(string memory _name) public onlyOwner {
+        candidatesCount++;
+        candidates[candidatesCount] = Candidate(
+            candidatesCount,
+            _name,
+            0
+        );
+
+        emit CandidateAdded(candidatesCount, _name);
     }
 
-    function startVoting() public onlyAdmin {
-        votingActive = true;
-    }
-
-    function vote(uint256 candidateIndex) public {
-        require(votingActive, "Voting not active");
+    // Vote for a candidate
+    function vote(uint _candidateId) public {
         require(!hasVoted[msg.sender], "Already voted");
+        require(_candidateId > 0 && _candidateId <= candidatesCount, "Invalid candidate");
 
-        candidates[candidateIndex].voteCount += 1;
         hasVoted[msg.sender] = true;
+        candidates[_candidateId].voteCount++;
+
+        emit VoteCasted(msg.sender, _candidateId);
     }
 
-    function getCandidatesCount() public view returns (uint256) {
-        return candidates.length;
+    // Get candidate details
+    function getCandidate(uint _id) public view returns (string memory, uint) {
+        Candidate memory c = candidates[_id];
+        return (c.name, c.voteCount);
     }
 }
