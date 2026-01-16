@@ -7,6 +7,38 @@ function App() {
   const [candidates, setCandidates] = useState([]);
   const [newCandidate, setNewCandidate] = useState("");
 
+  const [networkName, setNetworkName] = useState("");
+  const [chainId, setChainId] = useState(null);
+
+  const SEPOLIA_CHAIN_ID = 11155111;
+
+  const checkNetwork = async () => {
+    if (!window.ethereum) return;
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const network = await provider.getNetwork();
+
+    setNetworkName(network.name);
+    setChainId(Number(network.chainId));
+  };
+
+  const switchToSepolia = async () => {
+    if (!window.ethereum) {
+      alert("MetaMask not installed");
+      return;
+    }
+
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0xaa36a7" }], // Sepolia in hex
+      });
+    } catch (error) {
+      alert("Failed to switch network");
+      console.error(error);
+    }
+  };
+
   const connectWallet = async () => {
     if (!window.ethereum) {
       alert("MetaMask not installed");
@@ -18,10 +50,16 @@ function App() {
     });
 
     setAccount(accounts[0]);
+    await checkNetwork();
   };
 
   const readContract = async () => {
     try {
+      await checkNetwork();
+
+      // Block reading if not on Sepolia
+      if (chainId !== null && chainId !== SEPOLIA_CHAIN_ID) return;
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = getVotingContract(provider);
 
@@ -46,6 +84,13 @@ function App() {
 
   const vote = async (candidateId) => {
     try {
+      await checkNetwork();
+
+      if (chainId !== null && chainId !== SEPOLIA_CHAIN_ID) {
+        alert("⚠️ Please switch to Sepolia to vote.");
+        return;
+      }
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = getVotingContract(signer);
@@ -53,10 +98,11 @@ function App() {
       const tx = await contract.vote(candidateId);
       await tx.wait();
 
-      alert("Vote successful!");
+      alert("✅ Vote successful!");
       readContract();
     } catch (err) {
       alert(err.reason || "Vote failed");
+      console.error(err);
     }
   };
 
@@ -64,6 +110,13 @@ function App() {
     if (!newCandidate) return alert("Enter candidate name");
 
     try {
+      await checkNetwork();
+
+      if (chainId !== null && chainId !== SEPOLIA_CHAIN_ID) {
+        alert("⚠️ Please switch to Sepolia to add candidates.");
+        return;
+      }
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = getVotingContract(signer);
@@ -71,14 +124,24 @@ function App() {
       const tx = await contract.addCandidate(newCandidate);
       await tx.wait();
 
-      alert("Candidate added!");
+      alert("✅ Candidate added!");
       setNewCandidate("");
       readContract();
     } catch (err) {
       alert(err.reason || "Only owner can add candidate");
+      console.error(err);
     }
   };
 
+  // Auto reload when chain/account changes
+  useEffect(() => {
+    if (window.ethereum) {
+      window.ethereum.on("chainChanged", () => window.location.reload());
+      window.ethereum.on("accountsChanged", () => window.location.reload());
+    }
+  }, []);
+
+  // Read candidates after wallet connects
   useEffect(() => {
     if (account) readContract();
   }, [account]);
@@ -91,7 +154,31 @@ function App() {
         <button onClick={connectWallet}>Connect Wallet</button>
       ) : (
         <>
-          <p>Connected: {account}</p>
+          <p>
+            <b>Connected:</b> {account}
+          </p>
+
+          <p><b>Network:</b> {networkName} (Chain ID: {chainId})</p>
+
+          {chainId !== 11155111 && (
+            <p style={{ color: "red" }}>
+              ⚠️ Wrong Network! Switch to <b>Sepolia</b>
+            </p>
+          )}
+
+
+          <p>
+            <b>Network:</b> {networkName} (Chain ID: {chainId})
+          </p>
+
+          {chainId !== SEPOLIA_CHAIN_ID && (
+            <div style={{ marginBottom: "1rem" }}>
+              <p style={{ color: "red" }}>
+                ⚠️ Wrong Network! Please switch to <b>Sepolia</b>.
+              </p>
+              <button onClick={switchToSepolia}>Switch to Sepolia</button>
+            </div>
+          )}
 
           <h3>Add Candidate (Owner only)</h3>
           <input
